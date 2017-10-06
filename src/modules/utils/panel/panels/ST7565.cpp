@@ -113,7 +113,7 @@ ST7565::ST7565(uint8_t variant)
     this->a0.from_string(THEKERNEL->config->value( panel_checksum, a0_pin_checksum)->by_default("nc")->as_string())->as_output();
     if(a0.connected()) a0.set(1);
 
-    if(!is_viki2 && !is_mini_viki2 && !is_ssd1306) {
+    if(!is_viki2 && !is_mini_viki2) {
         this->up_pin.from_string(THEKERNEL->config->value( panel_checksum, up_button_pin_checksum )->by_default("nc")->as_string())->as_input();
         this->down_pin.from_string(THEKERNEL->config->value( panel_checksum, down_button_pin_checksum )->by_default("nc")->as_string())->as_input();
     } else {
