@@ -38,7 +38,7 @@ void FileScreen::on_enter()
 void FileScreen::on_exit()
 {
     // reset to root directory, I think this is less confusing
-    THEKERNEL->current_path= "/";
+    THEKERNEL->current_path= "/sd/";
 }
 
 // For every ( potential ) refresh of the screen

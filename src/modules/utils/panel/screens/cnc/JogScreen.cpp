@@ -49,15 +49,16 @@ void JogScreen::display_menu_line(uint16_t line)
 {
     switch ( line ) {
         case 0: THEPANEL->lcd->printf("Back");  break;
-        case 1: THEPANEL->lcd->printf("Move 10.0       "); break;
-        case 2: THEPANEL->lcd->printf("Move  1.0       "); break;
-        case 3: THEPANEL->lcd->printf("Move  0.1       "); break;
-        case 4: THEPANEL->lcd->printf("Move  0.01      "); break;
-        case 5: THEPANEL->lcd->printf("Move  0.001     "); break;
-        case 6: THEPANEL->lcd->printf("MPG mode        "); break;
-        case 7: THEPANEL->lcd->printf("Feed Rates      "); break;
-        case 8: THEPANEL->lcd->printf("Goto Park Posn  "); break;
-        case 9: THEPANEL->lcd->printf("Set Park Posn   "); break;
+        case 1: THEPANEL->lcd->printf("Move 100.0       "); break;
+        case 2: THEPANEL->lcd->printf("Move 10.0       "); break;
+        case 3: THEPANEL->lcd->printf("Move  1.0       "); break;
+        case 4: THEPANEL->lcd->printf("Move  0.1       "); break;
+        case 5: THEPANEL->lcd->printf("Move  0.01      "); break;
+        case 6: THEPANEL->lcd->printf("Move  0.001     "); break;
+        case 7: THEPANEL->lcd->printf("MPG mode        "); break;
+        case 8: THEPANEL->lcd->printf("Feed Rates      "); break;
+        case 9: THEPANEL->lcd->printf("Goto Park Posn  "); break;
+        case 10: THEPANEL->lcd->printf("Set Park Posn   "); break;
     }
 }
 
@@ -66,21 +67,21 @@ void JogScreen::clicked_menu_entry(uint16_t line)
     bool dojog= true;
     switch ( line ) {
         case 0: THEPANEL->enter_screen(this->parent); return;
-        case 1: this->control_screen->set_jog_increment(10.0F); break;
-        case 2: this->control_screen->set_jog_increment(1.0F); break;
-        case 3: this->control_screen->set_jog_increment(0.1F); break;
-        case 4: this->control_screen->set_jog_increment(0.01F); break;
-        case 5: this->control_screen->set_jog_increment(0.001F); break;
-        case 6: {
+        case 1: this->control_screen->set_jog_increment(100.0F); break;
+        case 2: this->control_screen->set_jog_increment(10.0F); break;
+        case 3: this->control_screen->set_jog_increment(1.0F); break;
+        case 4: this->control_screen->set_jog_increment(0.1F); break;
+        case 5: this->control_screen->set_jog_increment(0.01F); break;
+        case 6: this->control_screen->set_jog_increment(0.001F); break;
+        case 7: {
             auto djs = new DirectJogScreen();
             djs->set_parent(this);
             THEPANEL->enter_screen(djs); // self deleting
             dojog= false;
         } break;
-        case 7: set_feed_rates(); dojog= false; break;
-        case 8: send_command("G28"); dojog= false; break;
-        case 9: send_command("G28.1"); dojog= false; break;
-
+        case 8: set_feed_rates(); dojog= false; break;
+        case 9: send_command("G28"); dojog= false; break;
+        case 10: send_command("G28.1"); dojog= false; break;
     }
 
     if(dojog) {
