@@ -608,12 +608,14 @@ void Robot::on_gcode_received(void *argument)
                 }
                 // fall through
             case 84:
-                THEKERNEL->conveyor->wait_for_idle();
-                THEKERNEL->call_event(ON_ENABLE, nullptr); // turn all enable pins off
+                if(gcode->subcode == 1) {
+                    THEKERNEL->conveyor->wait_for_idle();
+                    THEKERNEL->call_event(ON_ENABLE, (void*)1); // turn all enable pins on
+                } else {
+                    THEKERNEL->conveyor->wait_for_idle();
+                    THEKERNEL->call_event(ON_ENABLE, nullptr); // turn all enable pins off
+                }
                 break;
-
-            case 84.1: // OpenBuild Addition: Turn Motors on
-                THEKERNEL->call_event(ON_ENABLE, (void*)1); // turn all enable pins on
 
             case 82: e_absolute_mode= true; break;
             case 83: e_absolute_mode= false; break;
