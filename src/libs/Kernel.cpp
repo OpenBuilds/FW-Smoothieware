@@ -42,6 +42,7 @@
 #define laser_checksum CHECKSUM("laser")
 #define baud_rate_setting_checksum CHECKSUM("baud_rate")
 #define uart0_checksum             CHECKSUM("uart0")
+#define uart2_checksum             CHECKSUM("uart2")
 
 #define base_stepping_frequency_checksum            CHECKSUM("base_stepping_frequency")
 #define microseconds_per_step_pulse_checksum        CHECKSUM("microseconds_per_step_pulse")
@@ -88,6 +89,7 @@ Kernel::Kernel()
     switch( __mriPlatform_CommUartIndex() ) {
         case 0:
             this->serial = new(AHB0) SerialConsole(USBTX, USBRX, this->config->value(uart0_checksum, baud_rate_setting_checksum)->by_default(DEFAULT_SERIAL_BAUD_RATE)->as_number());
+            this->serial2 = new(AHB0) SerialConsole(  p28,   p27, this->config->value(uart2_checksum, baud_rate_setting_checksum)->by_default(DEFAULT_SERIAL_BAUD_RATE)->as_number());
             break;
         case 1:
             this->serial = new(AHB0) SerialConsole(  p13,   p14, this->config->value(uart0_checksum, baud_rate_setting_checksum)->by_default(DEFAULT_SERIAL_BAUD_RATE)->as_number());
@@ -122,6 +124,8 @@ Kernel::Kernel()
     this->new_status_format = this->config->value( new_status_format_checksum )->by_default(false)->as_bool();
 
     this->add_module( this->serial );
+
+    this->add_module( this->serial2 );
 
     // HAL stuff
     add_module( this->slow_ticker = new SlowTicker());
@@ -347,4 +351,3 @@ void Kernel::unregister_for_event(_EVENT_ENUM id_event, Module *mod)
         }
     }
 }
-
