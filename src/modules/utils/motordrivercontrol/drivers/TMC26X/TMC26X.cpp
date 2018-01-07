@@ -864,7 +864,7 @@ bool TMC26X::isCurrentScalingHalfed()
     }
 }
 
-void TMC26X::dumpStatus(StreamOutput *stream, bool readable)
+void TMC26X::dumpStatus(StreamOutput *stream, bool readable, bool json)
 {
     if (readable) {
         stream->printf("designator %c, Chip type TMC26X\n", designator);
@@ -897,6 +897,11 @@ void TMC26X::dumpStatus(StreamOutput *stream, bool readable)
         stream->printf(" stall guard2 current register: %08lX(%ld)\n", stall_guard2_current_register_value, stall_guard2_current_register_value);
         stream->printf(" driver configuration register: %08lX(%ld)\n", driver_configuration_register_value, driver_configuration_register_value);
         stream->printf(" motor_driver_control.xxx.reg %05lX,%05lX,%05lX,%05lX,%05lX\n", driver_control_register_value, chopper_config_register, cool_step_register_value, stall_guard2_current_register_value, driver_configuration_register_value);
+
+    } else if (json) {
+
+      // JSON Formatted feedback of TMC26X values
+      stream->printf("axis : { type: TMC26x, axis: %c, stallGuardValue: %d, currentSetting:  %d, coolStepCurrent: %d, microsteps: %d }\n", designator, getCurrentStallGuardReading(), getCurrent(), getCoolstepCurrent(), microsteps);
 
     } else {
         // TODO hardcoded for X need to select ABC as needed

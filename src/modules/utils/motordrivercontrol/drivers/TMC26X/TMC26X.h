@@ -400,7 +400,7 @@ public:
      * \brief Prints out all the information that can be found in the last status read out - it does not force a status readout.
      * The result is printed via Serial
      */
-    void dumpStatus(StreamOutput *stream, bool readable= true);
+    void dumpStatus(StreamOutput *stream, bool readable= true, bool json= true);
     bool setRawRegister(StreamOutput *stream, uint32_t reg, uint32_t val);
     bool checkAlarm();
 
@@ -448,4 +448,3 @@ private:
     char designator;
 
 };
-

@@ -292,7 +292,7 @@ void MotorDriverControl::on_gcode_received(void *argument)
         } else if(gcode->m == 911) {
             // set or get raw registers
             // M911 will dump all the registers and status of all the motors
-            // M911.1 Pn (or X0) will dump the registers and status of the selected motor. R0 will request format in processing machine readable format
+            // M911.1 Pn (or X0) will dump the registers and status of the selected motor. R0 will request format in processing machine readable format.  J0 will request format in JSON format
             // M911.2 Pn (or Y0) Rxxx Vyyy sets Register xxx to value yyy for motor nnn, xxx == 255 writes the registers, xxx == 0 shows what registers are mapped to what
             // M911.3 Pn (or Z0) will set the options based on the parameters passed as below...
             // TMC2660:-
@@ -310,9 +310,12 @@ void MotorDriverControl::on_gcode_received(void *argument)
                 gcode->stream->printf("Motor %d (%c)...\n", id, axis);
                 dump_status(gcode->stream, true);
 
+            }else if (gcode->subcode == 0 && gcode->has_letter('J')) {
+              dump_status(gcode->stream, !gcode->has_letter('R') && !gcode->has_letter('J'));
+
             }else if( (gcode->has_letter('P') && gcode->get_value('P') == id) || gcode->has_letter(axis)) {
                 if(gcode->subcode == 1) {
-                    dump_status(gcode->stream, !gcode->has_letter('R'));
+                    dump_status(gcode->stream, !gcode->has_letter('R') && !gcode->has_letter('J'));
 
                 }else if(gcode->subcode == 2 && gcode->has_letter('R') && gcode->has_letter('V')) {
                     set_raw_register(gcode->stream, gcode->get_value('R'), gcode->get_value('V'));
@@ -471,4 +474,3 @@ int MotorDriverControl::sendSPI(uint8_t *b, int cnt, uint8_t *r)
     spi_cs_pin.set(1);
     return cnt;
 }
-
