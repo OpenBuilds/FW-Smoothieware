@@ -901,7 +901,7 @@ void TMC26X::dumpStatus(StreamOutput *stream, bool readable, bool json)
     } else if (json) {
 
       // JSON Formatted feedback of TMC26X values
-      stream->printf("axis : { type: TMC26x, axis: %c, stallGuardValue: %d, currentSetting:  %d, coolStepCurrent: %d, microsteps: %d }\n", designator, getCurrentStallGuardReading(), getCurrent(), getCoolstepCurrent(), microsteps);
+      stream->printf("{ \"type\": \"TMC26x\", \"axis\": \"%c\", \"microsteps\": %d, \"currentSetting\":  %d, \"enabled\": %d, \"stallGuard\": { \"stallGuardReading\": %d, \"stallGuardThreshold\": %d, \"stallGuardFilter\": %d }, \"coolStep\": { \"coolStepEnabled\": %d, \"coolStepCurrent\": %d, \"coolStepLowerThreshold\": %d, \"coolStepUpperThreshold\": %d, \"coolStepNumberOfReadings\": %d, \"coolStepCurrentIncrement\": %d, \"coolStepLowerCurrentLimit\": %d }, \"troubleshooting\": { \"shortGndA\": %d, \"shortGndB\": %d, \"openLoadA\": %d, \"openLoadB\": %d, \"overTemp\": %d }}\n", designator, getMicrosteps(), getCurrent(), isEnabled(), getCurrentStallGuardReading(), getStallGuardThreshold(), getStallGuardFilter(), isCoolStepEnabled(), getCoolstepCurrent(), getCoolStepLowerSgThreshold(), getCoolStepUpperSgThreshold(), getCoolStepNumberOfSGReadings(), getCoolStepCurrentIncrementSize(), getCoolStepLowerCurrentLimit(), isShortToGroundA(), isShortToGroundB(), isOpenLoadA(), isOpenLoadB(), getOverTemperature());
 
     } else {
         // TODO hardcoded for X need to select ABC as needed
