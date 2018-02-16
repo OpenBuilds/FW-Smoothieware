@@ -1,0 +1,55 @@
+motor_driver_control.alpha.enable           true            # alpha (X) is a TMC26X
+motor_driver_control.alpha.designator       X               #
+motor_driver_control.alpha.axis       		  X               #
+motor_driver_control.alpha.chip             TMC2660         # chip name
+motor_driver_control.alpha.current          2800            # current in milliamps
+motor_driver_control.alpha.max_current      4450            # max current in milliamps
+motor_driver_control.alpha.microsteps       16              # microsteps 256 max
+motor_driver_control.alpha.alarm            true            # set to true means the error bits are checked
+motor_driver_control.alpha.halt_on_alarm    false           # if set to true means ON_HALT is entered on any error bits being set
+motor_driver_control.alpha.spi_channel      0               # SPI channel 1 is sdcard channel
+motor_driver_control.alpha.spi_cs_pin       0.4             # SPI CS pin
+#motor_driver_control.alpha.spi_frequency   100000          # SPI frequency
+motor_driver_control.alpha.sense_resistor   70              # set the sense resistor used.
+
+motor_driver_control.beta.enable            true            # beta (Y) is a TMC26X
+motor_driver_control.beta.designator        Y               #
+motor_driver_control.beta.axis       		    Y               #
+motor_driver_control.beta.chip              TMC2660         # chip name
+motor_driver_control.beta.current           2800            # current in milliamps
+motor_driver_control.beta.max_current       4450            # max current in milliamps
+motor_driver_control.beta.microsteps        16              # microsteps 256 max
+motor_driver_control.beta.alarm             true            # set to true means the error bits are checked
+motor_driver_control.beta.halt_on_alarm     false           # if set to true means ON_HALT is entered on any error bits being set
+motor_driver_control.beta.spi_channel       0               # SPI channel 1 is sdcard channel
+motor_driver_control.beta.spi_cs_pin        0.10            # SPI CS pin
+#motor_driver_control.beta.spi_frequency    100000          # SPI frequency
+motor_driver_control.beta.sense_resistor    70              # set the sense resistor used.
+
+motor_driver_control.gamma.enable           true            # gamma (Z) is a TMC26X
+motor_driver_control.gamma.designator       Z               #
+motor_driver_control.gamma.axis       		  Z               #
+motor_driver_control.gamma.chip             TMC2660         # chip name
+motor_driver_control.gamma.current          2800            # current in milliamps
+motor_driver_control.gamma.max_current      4450            # max current in milliamps
+motor_driver_control.gamma.microsteps       16              # microsteps 256 max
+motor_driver_control.gamma.alarm            true            # set to true means the error bits are checked
+motor_driver_control.gamma.halt_on_alarm    false           # if set to true means ON_HALT is entered on any error bits being set
+motor_driver_control.gamma.spi_channel      0               # SPI channel 1 is sdcard channel
+motor_driver_control.gamma.spi_cs_pin       0.19            # SPI CS pin
+#motor_driver_control.gamma.spi_frequency   100000          # SPI frequency
+motor_driver_control.gamma.sense_resistor   70              # set the sense resistor used.
+
+motor_driver_control.delta.enable           true            # delta (A/E) is a TMC26X
+motor_driver_control.delta.designator       E               #
+motor_driver_control.delta.axis       		  E               #
+motor_driver_control.delta.chip             TMC2660         # chip name
+motor_driver_control.delta.current          2800            # current in milliamps
+motor_driver_control.delta.max_current      4450            # max current in milliamps
+motor_driver_control.delta.microsteps       16              # microsteps 256 max
+motor_driver_control.delta.alarm            true            # set to true means the error bits are checked
+motor_driver_control.delta.halt_on_alarm    false           # if set to true means ON_HALT is entered on any error bits being set
+motor_driver_control.delta.spi_channel      0               # SPI channel 1 is sdcard channel
+motor_driver_control.delta.spi_cs_pin       0.21            # SPI CS pin
+#motor_driver_control.delta.spi_frequency   100000          # SPI frequency
+motor_driver_control.delta.sense_resistor   70              # set the sense resistor used.

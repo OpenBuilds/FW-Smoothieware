@@ -1,0 +1,32 @@
+alpha_step_pin                               2.0              # Pin for alpha stepper step signal
+alpha_dir_pin                                0.5              # Pin for alpha stepper direction, add '!' to reverse direction
+alpha_en_pin                                 nc               # Pin for alpha enable pin
+
+beta_step_pin                                2.1              # Pin for beta stepper step signal
+beta_dir_pin                                 0.11             # Pin for beta stepper direction, add '!' to reverse direction
+beta_en_pin                                  nc               # Pin for beta enable
+
+gamma_step_pin                               2.2              # Pin for gamma stepper step signal
+gamma_dir_pin                                0.20             # Pin for gamma stepper direction, add '!' to reverse direction
+gamma_en_pin                                 nc               # Pin for gamma enable
+
+led_ring.red_led_pin                         2.8              #
+led_ring.green_led_pin                       2.11             #
+led_ring.blue_led_pin                        2.13             #
+
+switch.fan.output_pin                        2.6              # Pin this module controls
+switch.led.output_pin                        2.7              # Pin this module controls
+
+
+# uncomment either min or max, single pin available but can be used for either depending on use case
+alpha_min_endstop                            1.27^            # Pin to read min endstop, add a ! to invert if endstop is NO connected to ground
+#alpha_max_endstop                           1.27^            # Pin to read max endstop, uncomment this and comment the above if using max endstops
+beta_min_endstop                             1.28^            # Pin to read min endstop, add a ! to invert if endstop is NO connected to ground
+#beta_max_endstop                            1.28^            # Pin to read max endstop, uncomment this and comment the above if using max endstops
+gamma_min_endstop                            1.29^            # Pin to read min endstop, add a ! to invert if endstop is NO connected to ground
+#gamma_max_endstop                           1.29^            # Pin to read max endstop, uncomment this and comment the above if using max endstops
+zprobe.probe_pin                             1.25!^          # Pin probe is attached to, if NC remove the !
+
+kill_button_pin                              2.12             # Kill button pin. default is same as pause button 2.12 (2.11 is another good choice)
+
+motor_driver_control.alpha.spi_cs_pin       0.4             # SPI CS pin
