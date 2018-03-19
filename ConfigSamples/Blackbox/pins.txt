@@ -10,9 +10,9 @@ gamma_step_pin                               2.2              # Pin for gamma st
 gamma_dir_pin                                0.20             # Pin for gamma stepper direction, add '!' to reverse direction
 gamma_en_pin                                 nc               # Pin for gamma enable
 
-led_ring.red_led_pin                         2.8              #
-led_ring.green_led_pin                       2.11             #
-led_ring.blue_led_pin                        2.13             #
+led_ring.red_led_pin                         2.8              # M150 RXXX GXXX BXXX
+led_ring.green_led_pin                       2.11             # M150 RXXX GXXX BXXX
+led_ring.blue_led_pin                        2.13             # M150 RXXX GXXX BXXX
 
 switch.fan.output_pin                        2.6              # Pin this module controls
 switch.led.output_pin                        2.7              # Pin this module controls
@@ -28,5 +28,3 @@ gamma_min_endstop                            1.29^            # Pin to read min 
 zprobe.probe_pin                             1.25!^          # Pin probe is attached to, if NC remove the !
 
 kill_button_pin                              2.12             # Kill button pin. default is same as pause button 2.12 (2.11 is another good choice)
-
-motor_driver_control.alpha.spi_cs_pin       0.4             # SPI CS pin

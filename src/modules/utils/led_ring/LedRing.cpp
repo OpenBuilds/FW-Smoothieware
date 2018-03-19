@@ -4,6 +4,8 @@
 #include "Config.h"
 #include "checksumm.h"
 #include "ConfigValue.h"
+#include "libs/StreamOutput.h"
+#include "libs/StreamOutputPool.h"
 #include "Gcode.h"
 #include "libs/nuts_bolts.h"
 #include "libs/utils.h"
@@ -72,6 +74,7 @@ void LedRing::on_module_loaded()
     // if the module is disabled -> do nothing
     if(!THEKERNEL->config->value( led_ring_cs, enable_cs )->by_default(false)->as_bool()) {
         // as this module is not needed free up the resource
+        THEKERNEL->streams->printf("LEDRING ERROR: disabled\n");
         delete this;
         return;
     }
@@ -83,6 +86,7 @@ void LedRing::on_module_loaded()
 
     if(!red_pin.connected() && !green_pin.connected() && !blue_pin.connected() && !hot_pin.connected()) {
         // as this module has not defined any led pins free it up
+        THEKERNEL->streams->printf("LEDRING ERROR: no pins\n");
         delete this;
         return;
     }
@@ -134,6 +138,7 @@ void LedRing::on_module_loaded()
     THEKERNEL->slow_ticker->attach(2000, &green_pin, &Pwm::on_tick);
     THEKERNEL->slow_ticker->attach(2000, &blue_pin, &Pwm::on_tick);
     if(hot_pin.connected()) THEKERNEL->slow_ticker->attach(1000, &hot_pin, &Pwm::on_tick);
+    THEKERNEL->streams->printf("LEDRING ready! \n");
 }
 
 static struct pad_temperature getTemperatures(uint16_t heater_cs)
@@ -336,7 +341,7 @@ void  LedRing::on_gcode_received(void *argument)
                 b= gcode->get_value('B');
                 autorun= false;
             }
-
+            THEKERNEL->streams->printf("Setting RGB\n");
             setLeds(r, g, b);
         }
     }
