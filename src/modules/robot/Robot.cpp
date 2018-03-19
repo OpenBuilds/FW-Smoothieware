@@ -33,6 +33,7 @@
 #include "ExtruderPublicAccess.h"
 #include "GcodeDispatch.h"
 #include "ActuatorCoordinates.h"
+#include "EndstopsPublicAccess.h"
 
 #include "mbed.h" // for us_ticker_read()
 #include "mri.h"
@@ -87,7 +88,17 @@
 
 #define laser_module_default_power_checksum     CHECKSUM("laser_module_default_power")
 
-#define ARC_ANGULAR_TRAVEL_EPSILON 5E-7F // Float (radians)
+#define enable_checksum                    CHECKSUM("enable")
+#define halt_checksum                      CHECKSUM("halt")
+#define soft_endstop_checksum              CHECKSUM("soft_endstop")
+#define xmin_checksum                      CHECKSUM("x_min")
+#define ymin_checksum                      CHECKSUM("y_min")
+#define zmin_checksum                      CHECKSUM("z_min")
+#define xmax_checksum                      CHECKSUM("x_max")
+#define ymax_checksum                      CHECKSUM("y_max")
+#define zmax_checksum                      CHECKSUM("z_max")
+
+#define ARC_ANGULAR_TRAVEL_EPSILON 5E-9F // Float (radians)
 #define PI 3.14159265358979323846F // force to be float, do not use M_PI
 
 // The Robot converts GCodes into actual movements, and then adds them to the Planner, which passes them to the Conveyor so they can be added to the queue
@@ -194,7 +205,7 @@ void Robot::load_config()
     this->s_value             = THEKERNEL->config->value(laser_module_default_power_checksum)->by_default(0.8F)->as_number();
 
      // Make our Primary XYZ StepperMotors, and potentially A B C
-    uint16_t const checksums[][6] = {
+    uint16_t const motor_checksums[][6] = {
         ACTUATOR_CHECKSUMS("alpha"), // X
         ACTUATOR_CHECKSUMS("beta"),  // Y
         ACTUATOR_CHECKSUMS("gamma"), // Z
@@ -216,7 +227,7 @@ void Robot::load_config()
     for (size_t a = 0; a < MAX_ROBOT_ACTUATORS; a++) {
         Pin pins[3]; //step, dir, enable
         for (size_t i = 0; i < 3; i++) {
-            pins[i].from_string(THEKERNEL->config->value(checksums[a][i])->by_default("nc")->as_string())->as_output();
+            pins[i].from_string(THEKERNEL->config->value(motor_checksums[a][i])->by_default("nc")->as_string())->as_output();
         }
 
         if(!pins[0].connected() || !pins[1].connected()) { // step and dir must be defined, but enable is optional
@@ -237,9 +248,9 @@ void Robot::load_config()
             return;
         }
 
-        actuators[a]->change_steps_per_mm(THEKERNEL->config->value(checksums[a][3])->by_default(a == 2 ? 2560.0F : 80.0F)->as_number());
-        actuators[a]->set_max_rate(THEKERNEL->config->value(checksums[a][4])->by_default(30000.0F)->as_number()/60.0F); // it is in mm/min and converted to mm/sec
-        actuators[a]->set_acceleration(THEKERNEL->config->value(checksums[a][5])->by_default(NAN)->as_number()); // mm/secs²
+        actuators[a]->change_steps_per_mm(THEKERNEL->config->value(motor_checksums[a][3])->by_default(a == 2 ? 2560.0F : 80.0F)->as_number());
+        actuators[a]->set_max_rate(THEKERNEL->config->value(motor_checksums[a][4])->by_default(30000.0F)->as_number()/60.0F); // it is in mm/min and converted to mm/sec
+        actuators[a]->set_acceleration(THEKERNEL->config->value(motor_checksums[a][5])->by_default(NAN)->as_number()); // mm/secs²
     }
 
     check_max_actuator_speeds(); // check the configs are sane
@@ -260,6 +271,16 @@ void Robot::load_config()
         actuators[i]->change_last_milestone(actuator_pos[i]);
 
     //this->clearToolOffset();
+
+    soft_endstop_enabled= THEKERNEL->config->value(soft_endstop_checksum, enable_checksum)->by_default(false)->as_bool();
+    soft_endstop_halt= THEKERNEL->config->value(soft_endstop_checksum, halt_checksum)->by_default(true)->as_bool();
+
+    soft_endstop_min[X_AXIS]= THEKERNEL->config->value(soft_endstop_checksum, xmin_checksum)->by_default(NAN)->as_number();
+    soft_endstop_min[Y_AXIS]= THEKERNEL->config->value(soft_endstop_checksum, ymin_checksum)->by_default(NAN)->as_number();
+    soft_endstop_min[Z_AXIS]= THEKERNEL->config->value(soft_endstop_checksum, zmin_checksum)->by_default(NAN)->as_number();
+    soft_endstop_max[X_AXIS]= THEKERNEL->config->value(soft_endstop_checksum, xmax_checksum)->by_default(NAN)->as_number();
+    soft_endstop_max[Y_AXIS]= THEKERNEL->config->value(soft_endstop_checksum, ymax_checksum)->by_default(NAN)->as_number();
+    soft_endstop_max[Z_AXIS]= THEKERNEL->config->value(soft_endstop_checksum, zmax_checksum)->by_default(NAN)->as_number();
 }
 
 uint8_t Robot::register_motor(StepperMotor *motor)
@@ -331,7 +352,7 @@ void Robot::print_position(uint8_t subcode, std::string& res, bool ignore_extrud
     // this does require a FK to get a machine position from the actuator position
     // and then invert all the transforms to get a workspace position from machine position
     // M114 just does it the old way uses machine_position and does inverse transforms to get the requested position
-    int n = 0;
+    uint32_t n = 0;
     char buf[64];
     if(subcode == 0) { // M114 print WCS
         wcs_t pos= mcs2wcs(machine_position);
@@ -372,6 +393,7 @@ void Robot::print_position(uint8_t subcode, std::string& res, bool ignore_extrud
         }
     }
 
+    if(n > sizeof(buf)) n= sizeof(buf);
     res.append(buf, n);
 
     #if MAX_ROBOT_ACTUATORS > 3
@@ -386,6 +408,7 @@ void Robot::print_position(uint8_t subcode, std::string& res, bool ignore_extrud
             // current actuator position
             n= snprintf(buf, sizeof(buf), " %c:%1.4f", 'A'+i-A_AXIS, actuators[i]->get_current_position());
         }
+        if(n > sizeof(buf)) n= sizeof(buf);
         if(n > 0) res.append(buf, n);
     }
     #endif
@@ -739,6 +762,26 @@ void Robot::on_gcode_received(void *argument)
                     if (mps < 0.0F)
                         mps = 0.0F;
                     THEKERNEL->planner->minimum_planner_speed = mps;
+                }
+                break;
+
+            case 211: // M211 Sn turns soft endstops on/off
+                if(gcode->has_letter('S')) {
+                    soft_endstop_enabled= gcode->get_uint('S') == 1;
+                }else{
+                    gcode->stream->printf("Soft endstops are %s", soft_endstop_enabled ? "Enabled" : "Disabled");
+                    for (int i = X_AXIS; i <= Z_AXIS; ++i) {
+                        if(isnan(soft_endstop_min[i])) {
+                            gcode->stream->printf(",%c min is disabled", 'X'+i);
+                        }
+                        if(isnan(soft_endstop_max[i])) {
+                            gcode->stream->printf(",%c max is disabled", 'X'+i);
+                        }
+                        if(!is_homed(i)) {
+                            gcode->stream->printf(",%c axis is not homed", 'X'+i);
+                        }
+                     }
+                    gcode->stream->printf("\n");
                 }
                 break;
 
@@ -1117,6 +1160,41 @@ bool Robot::append_milestone(const float target[], float rate_mm_s)
         compensationTransform(transformed_target, false);
     }
 
+    // check soft endstops only for homed axis that are enabled
+    if(soft_endstop_enabled) {
+        for (int i = 0; i <= Z_AXIS; ++i) {
+            if(!is_homed(i)) continue;
+            if( (!isnan(soft_endstop_min[i]) && transformed_target[i] < soft_endstop_min[i]) || (!isnan(soft_endstop_max[i]) && transformed_target[i] > soft_endstop_max[i]) ) {
+                if(soft_endstop_halt) {
+                    if(THEKERNEL->is_grbl_mode()) {
+                        THEKERNEL->streams->printf("error: ");
+                    }else{
+                        THEKERNEL->streams->printf("Error: ");
+                    }
+
+                    THEKERNEL->streams->printf("Soft Endstop %c was exceeded - reset or $X or M999 required\n", i+'X');
+                    THEKERNEL->call_event(ON_HALT, nullptr);
+                    return false;
+
+                //} else if(soft_endstop_truncate) {
+                    // TODO VERY hard to do need to go back and change the target, and calculate intercept with the edge
+                    // and store all preceding vectors that have on eor more points ourtside of bounds so we can create a propper clip against the boundaries
+
+                } else {
+                    // ignore it
+                    if(THEKERNEL->is_grbl_mode()) {
+                        THEKERNEL->streams->printf("error: ");
+                    }else{
+                        THEKERNEL->streams->printf("Error: ");
+                    }
+                    THEKERNEL->streams->printf("Soft Endstop %c was exceeded - entire move ignored\n", i+'X');
+                    return false;
+                }
+            }
+        }
+    }
+
+
     bool move= false;
     float sos= 0; // sum of squares for just primary axis (XYZ usually)
 
@@ -1349,8 +1427,8 @@ bool Robot::append_line(Gcode *gcode, const float target[], float rate_mm_s, flo
         // We always add another point after this loop so we stop at segments-1, ie i < segments
         for (int i = 1; i < segments; i++) {
             if(THEKERNEL->is_halted()) return false; // don't queue any more segments
-            for (int i = 0; i < n_motors; i++)
-                segment_end[i] += segment_delta[i];
+            for (int j = 0; j < n_motors; j++)
+                segment_end[j] += segment_delta[j];
 
             // Append the end of this segment to the queue
             // this can block waiting for free block queue or if in feed hold
@@ -1392,6 +1470,7 @@ bool Robot::append_arc(Gcode * gcode, const float target[], const float offset[]
     // Patch from GRBL Firmware - Christoph Baumann 04072015
     // CCW angle between position and target from circle center. Only one atan2() trig computation required.
     float angular_travel = atan2f(r_axis0 * rt_axis1 - r_axis1 * rt_axis0, r_axis0 * rt_axis0 + r_axis1 * rt_axis1);
+    if (plane_axis_2 == Y_AXIS) { is_clockwise = !is_clockwise; }  //Math for XZ plane is reverse of other 2 planes
     if (is_clockwise) { // Correct atan2 output per direction
         if (angular_travel >= -ARC_ANGULAR_TRAVEL_EPSILON) { angular_travel -= (2 * PI); }
     } else {
@@ -1402,7 +1481,7 @@ bool Robot::append_arc(Gcode * gcode, const float target[], const float offset[]
     float millimeters_of_travel = hypotf(angular_travel * radius, fabsf(linear_travel));
 
     // We don't care about non-XYZ moves ( for example the extruder produces some of those )
-    if( millimeters_of_travel < 0.00001F ) {
+    if( millimeters_of_travel < 0.000001F ) {
         return false;
     }
 
@@ -1414,83 +1493,90 @@ bool Robot::append_arc(Gcode * gcode, const float target[], const float offset[]
             arc_segment = min_err_segment;
         }
     }
+
+    // catch fall through on above
+    if(arc_segment < 0.0001F) {
+        arc_segment= 0.5F; /// the old default, so we avoid the divide by zero
+    }
+
     // Figure out how many segments for this gcode
     // TODO for deltas we need to make sure we are at least as many segments as requested, also if mm_per_line_segment is set we need to use the
-    uint16_t segments = ceilf(millimeters_of_travel / arc_segment);
-
-  //printf("Radius %f - Segment Length %f - Number of Segments %d\r\n",radius,arc_segment,segments);  // Testing Purposes ONLY
-    float theta_per_segment = angular_travel / segments;
-    float linear_per_segment = linear_travel / segments;
-
-    /* Vector rotation by transformation matrix: r is the original vector, r_T is the rotated vector,
-    and phi is the angle of rotation. Based on the solution approach by Jens Geisler.
-    r_T = [cos(phi) -sin(phi);
-    sin(phi) cos(phi] * r ;
-    For arc generation, the center of the circle is the axis of rotation and the radius vector is
-    defined from the circle center to the initial position. Each line segment is formed by successive
-    vector rotations. This requires only two cos() and sin() computations to form the rotation
-    matrix for the duration of the entire arc. Error may accumulate from numerical round-off, since
-    all float numbers are single precision on the Arduino. (True float precision will not have
-    round off issues for CNC applications.) Single precision error can accumulate to be greater than
-    tool precision in some cases. Therefore, arc path correction is implemented.
-
-    Small angle approximation may be used to reduce computation overhead further. This approximation
-    holds for everything, but very small circles and large mm_per_arc_segment values. In other words,
-    theta_per_segment would need to be greater than 0.1 rad and N_ARC_CORRECTION would need to be large
-    to cause an appreciable drift error. N_ARC_CORRECTION~=25 is more than small enough to correct for
-    numerical drift error. N_ARC_CORRECTION may be on the order a hundred(s) before error becomes an
-    issue for CNC machines with the single precision Arduino calculations.
-    This approximation also allows mc_arc to immediately insert a line segment into the planner
-    without the initial overhead of computing cos() or sin(). By the time the arc needs to be applied
-    a correction, the planner should have caught up to the lag caused by the initial mc_arc overhead.
-    This is important when there are successive arc motions.
-    */
-    // Vector rotation matrix values
-    float cos_T = 1 - 0.5F * theta_per_segment * theta_per_segment; // Small angle approximation
-    float sin_T = theta_per_segment;
-
-    // TODO we need to handle the ABC axis here by segmenting them
-    float arc_target[n_motors];
-    float sin_Ti;
-    float cos_Ti;
-    float r_axisi;
-    uint16_t i;
-    int8_t count = 0;
-
-    // init array for all axis
-    memcpy(arc_target, machine_position, n_motors*sizeof(float));
-
-    // Initialize the linear axis
-    arc_target[this->plane_axis_2] = this->machine_position[this->plane_axis_2];
-
+    uint16_t segments = floorf(millimeters_of_travel / arc_segment);
     bool moved= false;
-    for (i = 1; i < segments; i++) { // Increment (segments-1)
-        if(THEKERNEL->is_halted()) return false; // don't queue any more segments
 
-        if (count < this->arc_correction ) {
-            // Apply vector rotation matrix
-            r_axisi = r_axis0 * sin_T + r_axis1 * cos_T;
-            r_axis0 = r_axis0 * cos_T - r_axis1 * sin_T;
-            r_axis1 = r_axisi;
-            count++;
-        } else {
-            // Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments.
-            // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
-            cos_Ti = cosf(i * theta_per_segment);
-            sin_Ti = sinf(i * theta_per_segment);
-            r_axis0 = -offset[this->plane_axis_0] * cos_Ti + offset[this->plane_axis_1] * sin_Ti;
-            r_axis1 = -offset[this->plane_axis_0] * sin_Ti - offset[this->plane_axis_1] * cos_Ti;
-            count = 0;
+    if(segments > 1) {
+        float theta_per_segment = angular_travel / segments;
+        float linear_per_segment = linear_travel / segments;
+
+        /* Vector rotation by transformation matrix: r is the original vector, r_T is the rotated vector,
+        and phi is the angle of rotation. Based on the solution approach by Jens Geisler.
+        r_T = [cos(phi) -sin(phi);
+        sin(phi) cos(phi] * r ;
+        For arc generation, the center of the circle is the axis of rotation and the radius vector is
+        defined from the circle center to the initial position. Each line segment is formed by successive
+        vector rotations. This requires only two cos() and sin() computations to form the rotation
+        matrix for the duration of the entire arc. Error may accumulate from numerical round-off, since
+        all float numbers are single precision on the Arduino. (True float precision will not have
+        round off issues for CNC applications.) Single precision error can accumulate to be greater than
+        tool precision in some cases. Therefore, arc path correction is implemented.
+
+        Small angle approximation may be used to reduce computation overhead further. This approximation
+        holds for everything, but very small circles and large mm_per_arc_segment values. In other words,
+        theta_per_segment would need to be greater than 0.1 rad and N_ARC_CORRECTION would need to be large
+        to cause an appreciable drift error. N_ARC_CORRECTION~=25 is more than small enough to correct for
+        numerical drift error. N_ARC_CORRECTION may be on the order a hundred(s) before error becomes an
+        issue for CNC machines with the single precision Arduino calculations.
+        This approximation also allows mc_arc to immediately insert a line segment into the planner
+        without the initial overhead of computing cos() or sin(). By the time the arc needs to be applied
+        a correction, the planner should have caught up to the lag caused by the initial mc_arc overhead.
+        This is important when there are successive arc motions.
+        */
+        // Vector rotation matrix values
+        float cos_T = 1 - 0.5F * theta_per_segment * theta_per_segment; // Small angle approximation
+        float sin_T = theta_per_segment;
+
+        // TODO we need to handle the ABC axis here by segmenting them
+        float arc_target[n_motors];
+        float sin_Ti;
+        float cos_Ti;
+        float r_axisi;
+        uint16_t i;
+        int8_t count = 0;
+
+        // init array for all axis
+        memcpy(arc_target, machine_position, n_motors*sizeof(float));
+
+        // Initialize the linear axis
+        arc_target[this->plane_axis_2] = this->machine_position[this->plane_axis_2];
+
+        for (i = 1; i < segments; i++) { // Increment (segments-1)
+            if(THEKERNEL->is_halted()) return false; // don't queue any more segments
+
+            if (count < this->arc_correction ) {
+                // Apply vector rotation matrix
+                r_axisi = r_axis0 * sin_T + r_axis1 * cos_T;
+                r_axis0 = r_axis0 * cos_T - r_axis1 * sin_T;
+                r_axis1 = r_axisi;
+                count++;
+            } else {
+                // Arc correction to radius vector. Computed only every N_ARC_CORRECTION increments.
+                // Compute exact location by applying transformation matrix from initial radius vector(=-offset).
+                cos_Ti = cosf(i * theta_per_segment);
+                sin_Ti = sinf(i * theta_per_segment);
+                r_axis0 = -offset[this->plane_axis_0] * cos_Ti + offset[this->plane_axis_1] * sin_Ti;
+                r_axis1 = -offset[this->plane_axis_0] * sin_Ti - offset[this->plane_axis_1] * cos_Ti;
+                count = 0;
+            }
+
+            // Update arc_target location
+            arc_target[this->plane_axis_0] = center_axis0 + r_axis0;
+            arc_target[this->plane_axis_1] = center_axis1 + r_axis1;
+            arc_target[this->plane_axis_2] += linear_per_segment;
+
+            // Append this segment to the queue
+            bool b= this->append_milestone(arc_target, rate_mm_s);
+            moved= moved || b;
         }
-
-        // Update arc_target location
-        arc_target[this->plane_axis_0] = center_axis0 + r_axis0;
-        arc_target[this->plane_axis_1] = center_axis1 + r_axis1;
-        arc_target[this->plane_axis_2] += linear_per_segment;
-
-        // Append this segment to the queue
-        bool b= this->append_milestone(arc_target, rate_mm_s);
-        moved= moved || b;
     }
 
     // Ensure last segment arrives at target location.
@@ -1551,4 +1637,20 @@ void Robot::setToolOffset(const float offset[3])
 float Robot::get_feed_rate() const
 {
     return THEKERNEL->gcode_dispatch->get_modal_command() == 0 ? seek_rate : feed_rate;
+}
+
+bool Robot::is_homed(uint8_t i) const
+{
+    if(i >= 3) return false; // safety
+
+    // if we are homing we ignore soft endstops so return false
+    bool homing;
+    bool ok = PublicData::get_value(endstops_checksum, get_homing_status_checksum, 0, &homing);
+    if(!ok || homing) return false;
+
+    // check individual axis homing status
+    bool homed[3];
+    ok = PublicData::get_value(endstops_checksum, get_homed_status_checksum, 0, homed);
+    if(!ok) return false;
+    return homed[i];
 }

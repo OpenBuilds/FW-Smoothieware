@@ -821,7 +821,7 @@ void Endstops::process_home_command(Gcode* gcode)
     // check if on_halt (eg kill or fail)
     if(THEKERNEL->is_halted()) {
         if(!THEKERNEL->is_grbl_mode()) {
-            THEKERNEL->streams->printf("ERROR: Homing cycle failed\n");
+            THEKERNEL->streams->printf("ERROR: Homing cycle failed - check the max_travel settings\n");
         }else{
             THEKERNEL->streams->printf("ALARM: Homing fail\n");
         }
@@ -1166,6 +1166,13 @@ void Endstops::on_get_public_data(void* argument)
     } else if(pdr->second_element_is(get_homing_status_checksum)) {
         bool *homing = static_cast<bool *>(pdr->get_data_ptr());
         *homing = this->status != NOT_HOMING;
+        pdr->set_taken();
+
+    } else if(pdr->second_element_is(get_homed_status_checksum)) {
+        bool *homed = static_cast<bool *>(pdr->get_data_ptr());
+        for (int i = 0; i < 3; ++i) {
+            homed[i]= homing_axis[i].homed;
+        }
         pdr->set_taken();
     }
 }
