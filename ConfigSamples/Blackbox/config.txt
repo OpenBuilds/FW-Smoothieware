@@ -65,8 +65,8 @@ switch.led.max_pwm                           255              # Set max pwm for 
 
 # Module for RGB LEDs
 led_ring.enable                              true             #
-#led_ring.hot_temp                           50               # temp at which things are considered hot
-led_ring.ready_rgb                           255,255,255      # set R,G,B of the ready light (orange by default)
+led_ring.hot_temp                            50               # temp at which things are considered hot
+led_ring.ready_rgb                           255,255,0      # set R,G,B of the ready light (orange by default)
 led_ring.printing_rgb                        255,255,255      # set R,G,B of the printing light (white by default)
 led_ring.print_finished_timeout 0  # timeout in seconds for the print finished sequence, 0 to disable
 

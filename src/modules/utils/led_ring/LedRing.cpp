@@ -292,8 +292,8 @@ void  LedRing::on_second_tick(void* argument)
 {
     seconds++;
     if(THEKERNEL->is_halted()) {
-        if((seconds%3) == 0) {
-            // every 3 seconds blink red
+        if((seconds%1) == 0) {
+            // every 0.5 seconds blink red
             setLeds((red_pin.get_pwm()==255)?0:255, 0, 0);
         }
         return;
