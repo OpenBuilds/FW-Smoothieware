@@ -89,3 +89,6 @@ uart0.baud_rate                              115200           # Baud rate for th
 kill_button_enable                           true             # Set to true to enable a kill button
 
 #dfu_enable                                  false            # For linux developers, set to true to enable DFU
+
+beeper.enable 							                 true
+beeper.buzz_pin 							               4.29

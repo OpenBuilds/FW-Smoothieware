@@ -30,6 +30,7 @@
 #include "modules/utils/PlayLed/PlayLed.h"
 #include "modules/utils/panel/Panel.h"
 #include "modules/utils/led_ring/LedRing.h"
+#include "modules/utils/beeper/Beeper.h"
 #include "libs/Network/uip/Network.h"
 #include "Config.h"
 #include "checksumm.h"
@@ -194,6 +195,7 @@ void init() {
     #ifndef NO_UTILS_LEDRING
     kernel->add_module( new LedRing() );
     #endif
+    kernel->add_module( new Beeper() );
     // Create and initialize USB stuff
     u.init();
 
