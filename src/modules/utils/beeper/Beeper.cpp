@@ -74,7 +74,7 @@ void  Beeper::on_gcode_received(void *argument)
             int p = 0;
 
             if(gcode->get_num_args() == 0) {
-                // M150 set leds to auto
+                // Don't beep
                 return;
             }
 
